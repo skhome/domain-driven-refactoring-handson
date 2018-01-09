@@ -29,7 +29,77 @@ namespace Tests
         [Test]
         public void EricAnswersMostCorrectly_EricIsWinner()
         {
+            var gameId = _quizzy.Open(_existingQuiz);
             
+            Assert.AreEqual("Open", _quizzy.Status(gameId));
+            Assert.AreEqual(new List<string> {_existingQuiz}, _quizzy.Games());
+
+            _quizzy.Join(gameId, _mathias);
+            _quizzy.Join(gameId, _eric);
+            _quizzy.Join(gameId, _martin);
+            _quizzy.StartGame(gameId);
+            
+            Assert.AreEqual("Started", _quizzy.Status(gameId));
+
+            var question = _quizzy.Question(gameId);
+            _quizzy.Answer(gameId, _mathias, "incorrect answer", 10);
+            _quizzy.Answer(gameId, _eric, "answer1", 10);
+            _quizzy.Answer(gameId, _martin, "answer1", 10);
+            Assert.AreEqual("question2", _quizzy.Question(gameId));
+            
+            _quizzy.Answer(gameId, _martin, "incorrect answer", 10);
+            _quizzy.Answer(gameId, _mathias, "incorrect answer", 10);
+            _quizzy.Answer(gameId, _eric, "answer2", 10);
+            
+            Assert.AreEqual("Finished", _quizzy.Status(gameId));
+            
+            Assert.AreEqual("Eric", _quizzy.Winner(gameId));
+        }
+
+        [Test]
+        public void EricAnswersFastests_EricIsWinner()
+        {
+            var gameId = _quizzy.Open(_existingQuiz);
+            
+            _quizzy.Join(gameId, _mathias);
+            _quizzy.Join(gameId, _eric);
+            _quizzy.Join(gameId, _martin);
+            _quizzy.StartGame(gameId);
+            
+
+            var question = _quizzy.Question(gameId);
+            _quizzy.Answer(gameId, _mathias, "answer1", 10);
+            _quizzy.Answer(gameId, _eric, "answer1", 5);
+            _quizzy.Answer(gameId, _martin, "answer1", 10);
+            
+            _quizzy.Answer(gameId, _martin, "answer2", 10);
+            _quizzy.Answer(gameId, _mathias, "answer2", 10);
+            _quizzy.Answer(gameId, _eric, "answer2", 0);
+            
+            Assert.AreEqual("Eric", _quizzy.Winner(gameId));
+        }
+
+        [Test]
+        public void MultiplePlayersWithCorrectAnswers_And_SameTimes_ButEricIsFasterOnTheLastQuestion_EricIsWinner()
+        {
+            var gameId = _quizzy.Open(_existingQuiz);
+            
+            _quizzy.Join(gameId, _mathias);
+            _quizzy.Join(gameId, _eric);
+            _quizzy.Join(gameId, _martin);
+            _quizzy.StartGame(gameId);
+            
+
+            var question = _quizzy.Question(gameId);
+            _quizzy.Answer(gameId, _mathias, "answer1", 5);
+            _quizzy.Answer(gameId, _eric, "answer1", 10);
+            _quizzy.Answer(gameId, _martin, "answer1", 10);
+            
+            _quizzy.Answer(gameId, _martin, "answer2", 10);
+            _quizzy.Answer(gameId, _mathias, "answer2", 10);
+            _quizzy.Answer(gameId, _eric, "answer2", 5);
+            
+            Assert.AreEqual("Eric", _quizzy.Winner(gameId));
         }
 
         [Test]
@@ -59,7 +129,7 @@ namespace Tests
             
             Assert.AreEqual("Finished", _quizzy.Status(gameId));
             
-            Assert.AreEqual("Eric", _quizzy.Winner(_existingQuiz));
+            Assert.AreEqual("Eric", _quizzy.Winner(gameId));
         }
         #endregion
         
@@ -256,6 +326,47 @@ namespace Tests
             _quizzy.Answer(gameId, _mathias, "", 0);
             
             Assert.AreEqual("Finished", _quizzy.Status(gameId));
+        }
+
+        [Test]
+        public void Status_On_NonExistingGame()
+        {
+            var exception = Assert.Throws<ArgumentException>(() => _quizzy.Status(Guid.Empty));
+            Assert.AreEqual("Game does not exist", exception.Message);
+        }
+
+        [Test]
+        public void Winner_On_NonExistingGame()
+        {
+            var exception = Assert.Throws<ArgumentException>(() => _quizzy.Winner(Guid.Empty));
+            Assert.AreEqual("Game does not exist", exception.Message);
+        }
+
+        [Test]
+        public void Winner_On_NotStartedGame()
+        {
+            var gameId = _quizzy.Open(_existingQuiz);
+            var exception = Assert.Throws<ArgumentException>(() => _quizzy.Winner(gameId));
+            Assert.AreEqual("Game is not started", exception.Message);
+        }
+
+        [Test]
+        public void Winner_On_StartedGame()
+        {
+            var gameId = _quizzy.Open(_existingQuiz);
+            _quizzy.Join(gameId, _eric);
+            _quizzy.StartGame(gameId);
+            var exception = Assert.Throws<ArgumentException>(() => _quizzy.Winner(gameId));
+            Assert.AreEqual("Game is started", exception.Message);
+        }
+
+        [Test]
+        public void Winner_On_FinishedGame_WithoutPlayers()
+        {
+            var gameId = _quizzy.Open(_existingQuiz);
+            _quizzy.StartGame(gameId);
+            var exception = Assert.Throws<ArgumentException>(() => _quizzy.Winner(gameId));
+            Assert.AreEqual("Game is finished but no players", exception.Message);
         }
         #endregion
     }

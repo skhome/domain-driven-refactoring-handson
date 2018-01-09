@@ -6,11 +6,13 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Web.API.Controllers
 {
-    public class Quiz {
-        public string Name {get;}
-        public IDictionary<string, string> Questions {get;}
+    public class Quiz
+    {
+        public string Name { get; }
+        public IDictionary<string, string> Questions { get; }
 
-        public Quiz(string name, IDictionary<string, string> questions) {
+        public Quiz(string name, IDictionary<string, string> questions)
+        {
             Name = name;
             Questions = questions;
         }
@@ -28,12 +30,11 @@ namespace Web.API.Controllers
         private readonly IDictionary<Guid, IDictionary<int, List<Tuple<string, Tuple<string, int>>>>> _answers;
         private readonly IDictionary<Guid, int> _currentQuestion;
 
-        public QuizzyController() {
-            users = new List<string> { "Mathias", "Eric", "Alberto", "Martin"};
+        public QuizzyController()
+        {
+            users = new List<string> {"Mathias", "Eric", "Alberto", "Martin"};
             _openQuizzes = new Dictionary<Guid, string>();
-            var questions = new Dictionary<string, string>();
-            questions.Add("question1", "answer1");
-            questions.Add("question2", "answer2");
+            var questions = new Dictionary<string, string> {{"question1", "answer1"}, {"question2", "answer2"}};
             _allQuizzes =
                 new Dictionary<string, Quiz> {{"star wars", new Quiz("star wars", questions)}};
             _startedQuizzes = new Dictionary<Guid, string>();
@@ -43,7 +44,8 @@ namespace Web.API.Controllers
             _currentQuestion = new Dictionary<Guid, int>();
         }
 
-        public Guid Open(string name) {
+        public Guid Open(string name)
+        {
             if (_allQuizzes.ContainsKey(name))
             {
                 var gameId = Guid.NewGuid();
@@ -61,12 +63,12 @@ namespace Web.API.Controllers
         {
             return _openQuizzes.Values;
         }
-        
+
         public void StartGame(Guid quizId)
         {
             if (!_openQuizzes.ContainsKey(quizId))
             {
-                throw new ArgumentException("Game does not exist"); 
+                throw new ArgumentException("Game does not exist");
             }
 
             if (_joinedPlayers[quizId].Count == 0)
@@ -81,7 +83,8 @@ namespace Web.API.Controllers
             }
         }
 
-        public void Join(Guid gameId, string userName) {
+        public void Join(Guid gameId, string userName)
+        {
             if (!users.Contains(userName))
             {
                 throw new ArgumentException("Player does not exist");
@@ -109,7 +112,7 @@ namespace Web.API.Controllers
 
             _joinedPlayers[gameId].Add(userName);
         }
-        
+
         public string Status(Guid quizId)
         {
             if (_finishedQuizzes.Contains(quizId))
@@ -126,7 +129,8 @@ namespace Web.API.Controllers
             {
                 return "Open";
             }
-            return "";
+
+            throw new ArgumentException("Game does not exist");
         }
 
         public string Question(Guid quizId)
@@ -135,7 +139,7 @@ namespace Web.API.Controllers
             {
                 throw new ArgumentException("Game does not exist");
             }
-            
+
             if (_finishedQuizzes.Contains(quizId))
             {
                 throw new ArgumentException("Game is finished");
@@ -158,7 +162,7 @@ namespace Web.API.Controllers
             {
                 throw new ArgumentException("Game does not exist");
             }
-            
+
             if (_finishedQuizzes.Contains(quizId))
             {
                 throw new ArgumentException("Game is finished");
@@ -171,7 +175,7 @@ namespace Web.API.Controllers
 
             if (!_joinedPlayers[quizId].Contains(userName))
             {
-                throw new ArgumentException("Player has not joined"); 
+                throw new ArgumentException("Player has not joined");
             }
 
             var answers = _answers[quizId];
@@ -179,17 +183,21 @@ namespace Web.API.Controllers
             if (answers.ContainsKey(question))
             {
                 var a = answers[question];
-                
+
                 if (a.Any((tuple) => tuple.Item1 == userName))
                 {
                     throw new ArgumentException("Question already answered");
                 }
-                
+
                 a.Add(new Tuple<string, Tuple<string, int>>(userName, new Tuple<string, int>(answer, answerTime)));
             }
             else
             {
-                answers.Add(question, new List<Tuple<string, Tuple<string, int>>> { new Tuple<string, Tuple<string, int>>(userName, new Tuple<string, int>(answer, answerTime)) });
+                answers.Add(question,
+                    new List<Tuple<string, Tuple<string, int>>>
+                    {
+                        new Tuple<string, Tuple<string, int>>(userName, new Tuple<string, int>(answer, answerTime))
+                    });
             }
 
             if (answers[question].Count == _joinedPlayers[quizId].Count)
@@ -197,7 +205,7 @@ namespace Web.API.Controllers
                 question = question + 1;
                 _currentQuestion[quizId] = question;
             }
-            
+
             var quizName = _openQuizzes[quizId];
             var quiz = _allQuizzes[quizName];
 
@@ -205,12 +213,84 @@ namespace Web.API.Controllers
             {
                 _finishedQuizzes.Add(quizId);
             }
-            
         }
 
-        public string Winner(string gameName)
+        public string Winner(Guid gameName)
         {
-            return "";
+            try
+            {
+                if (Status(gameName) == "Finished")
+                {
+                    if (_joinedPlayers[gameName].Count == 0)
+                        throw new ArgumentException("Game is finished but no players");
+
+                    var winner = "";
+                    var correctAnswerScore = 10;
+                    var scores = new Dictionary<string, int>();
+                    var quizName = _openQuizzes[gameName];
+                    var quiz = _allQuizzes[quizName];
+                    foreach (var i in _answers[gameName].Keys)
+                    {
+                        var correct = quiz.Questions.ToArray()[i].Value;
+                        var tuples = _answers[gameName][i];
+
+                        tuples.ForEach(tuple =>
+                        {
+                            var user = tuple.Item1;
+                            var answer = tuple.Item2.Item1;
+                            var speed = tuple.Item2.Item2;
+
+                            if (correct == answer)
+                            {
+                                if (scores.TryGetValue(user, out var score))
+                                {
+                                    if (speed == 0)
+                                    {
+                                        scores[user] = score + (correctAnswerScore * (i +1));
+                                    }
+                                    else
+                                    {
+                                        scores[user] = score + ((correctAnswerScore * (i+1))/ speed);
+                                    }
+                                }
+                                else
+                                {
+                                    scores.Add(user, correctAnswerScore / speed);
+                                }
+                            }
+                        });
+                    }
+
+                    var largest = 0;
+                    foreach (var user in scores)
+                    {
+                        if (user.Value > largest)
+                        {
+                            largest = user.Value;
+                            winner = user.Key;
+                        }
+                    }
+
+                    return winner;
+                }
+
+                if (Status(gameName) == "Open")
+                {
+                    throw new ArgumentException("Game is not started");
+                }
+
+                if (Status(gameName) == "Started")
+                {
+                    throw new ArgumentException("Game is started");
+                }
+
+
+                return "";
+            }
+            catch (ArgumentException e)
+            {
+                throw e;
+            }
         }
     }
 }
