@@ -1,3 +1,9 @@
 .idea
 bin
 obj
+
+#java
+.gradle
+build
+out
+bin
