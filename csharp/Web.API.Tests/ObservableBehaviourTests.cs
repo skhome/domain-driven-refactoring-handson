@@ -41,7 +41,6 @@ namespace Tests
             
             Assert.AreEqual("Started", _quizzy.Status(gameId));
 
-            var question = _quizzy.Question(gameId);
             _quizzy.Answer(gameId, _mathias, "incorrect answer", 10);
             _quizzy.Answer(gameId, _eric, "answer1", 10);
             _quizzy.Answer(gameId, _martin, "answer1", 10);
