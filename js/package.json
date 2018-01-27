@@ -1,0 +1,17 @@
+{
+  "name": "js",
+  "version": "1.0.0",
+  "description": "Domain Driven Refactoring",
+  "main": "index.js",
+  "scripts": {
+    "test": "tap test/*.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "tap": "^11.0.1"
+  },
+  "dependencies": {
+    "uuid": "^3.2.1"
+  }
+}
