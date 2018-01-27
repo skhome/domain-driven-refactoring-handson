@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
 
 namespace Web.API.Controllers
 {
@@ -18,8 +16,7 @@ namespace Web.API.Controllers
         }
     }
 
-    [Route("api/[controller]")]
-    public class QuizzyController : Controller
+    public class QuizzyController
     {
         private IEnumerable<string> users;
         private readonly IDictionary<Guid, string> _openQuizzes;
